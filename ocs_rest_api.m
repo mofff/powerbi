@@ -14,7 +14,7 @@ clientsecret = "<client_secret>",
 clientid = "<client_id>",
 
 // PI Cloud Asset to query, using asset id either as an entered parameter or default specified after else in quotes
-assetId = if asset <> null then asset else "2587cba4-63a6-4f80-9c20-76c81ec6913e",
+assetId = if asset <> null then asset else "<asset-id>",
 
 // Number of days for report, using entered report_period_days parameter or default of 14
 report_period = if report_period_days <> null then report_period_days else 14,
