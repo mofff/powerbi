@@ -13,11 +13,14 @@ apiVersion = "v1-preview",
 clientsecret = "<client_secret>",
 clientid = "<client_id>",
 
-// OCS REST API Asset to query, using asset id
-assetId = "2587cba4-63a6-4f80-9c20-76c81ec6913e",
+// PI Cloud Asset to query, using asset id either as an entered parameter or default specified after else in quotes
+assetId = if asset <> null then asset else "2587cba4-63a6-4f80-9c20-76c81ec6913e",
+
+// Number of days for report, using entered report_period_days parameter or default of 14
+report_period = if report_period_days <> null then report_period_days else 14,
 
 endIndex = DateTimeZone.RemoveZone(DateTimeZone.UtcNow()), // Specify end date for the report as "now"
-startIndex = Date.StartOfDay(Date.AddDays(endIndex,-24)), // Specify start date as a negative number to get the day at 12:00:00 AM
+startIndex = Date.StartOfDay(Date.AddDays(endIndex,-report_period)), // Specify start date as a negative number to get the day at 12:00:00 AM
 
 // verify dates - for debugging
 //test = DateTime.ToText(startIndex,"yyyy-MM-ddTHH:mm:ssZ"),
