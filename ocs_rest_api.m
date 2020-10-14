@@ -35,7 +35,21 @@ resourceUri = "https://dat-b.osisoft.com",
 authUrlPart1 = resourceUri&"/identity",
 authUrlPart2 = "/connect/token",
 
-// PI Cloud REST API query
+// PI Cloud REST API query - sampled, note/update intervals as required
+//dataQuery = "/../api/"
+//    &apiVersion&
+//    "/Tenants/"
+//    &tenantId&
+//    "/Namespaces/"
+//    &namespaceId&
+//    "/Assets/"
+//    &assetId&
+//    "/Data/sampled?startIndex="
+//    &DateTime.ToText(startIndex)&
+//    "&intervals=960&endIndex="
+//    &DateTime.ToText(endIndex),
+
+// PI Cloud REST API query - window
 dataQuery = "/../api/"
     &apiVersion&
     "/Tenants/"
@@ -44,10 +58,11 @@ dataQuery = "/../api/"
     &namespaceId&
     "/Assets/"
     &assetId&
-    "/Data/sampled?startIndex="
+    "/Data?startIndex="
     &DateTime.ToText(startIndex)&
-    "&intervals=960&endIndex="
-    &DateTime.ToText(endIndex),
+    "&endIndex="
+    &DateTime.ToText(endIndex)&
+    "&count=250000",
 
 // Construct message for authentication
 escapedClientSecret = Uri.EscapeDataString(clientsecret),
