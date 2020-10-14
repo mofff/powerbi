@@ -1,116 +1,119 @@
+// 20201013.02 - change type
+
 let
+    //
+    // User configuration section - start
+    //
 
-//
-// User configuration section - start
-//
+    // Tenant information
+    namespaceId = "<namespace-id>",
+    tenantId = "<tenant-id>",
+    apiVersion = "v1-preview",
 
-// Tenant information
-namespaceId = "<namespace-id>",
-tenantId = "<tenant-id>",
-apiVersion = "v1-preview",
+    // Credentials - Note: use a client associated with read-only roles
+    clientsecret = "<client_secret>",
+    clientid = "<client_id>",
 
-// Credentials - Note: use a client associated with read-only roles
-clientsecret = "<client_secret>",
-clientid = "<client_id>",
+    // PI Cloud Asset to query, using asset id either as an entered parameter or default specified after else in quotes
+    assetId = if asset <> null then asset else "<asset-id>",
 
-// PI Cloud Asset to query, using asset id either as an entered parameter or default specified after else in quotes
-assetId = if asset <> null then asset else "<asset-id>",
+    // Number of days for report, using entered report_period_days parameter or default of 14
+    report_period = if report_period_days <> null then report_period_days else 14,
 
-// Number of days for report, using entered report_period_days parameter or default of 14
-report_period = if report_period_days <> null then report_period_days else 14,
+    endIndex = DateTimeZone.RemoveZone(DateTimeZone.UtcNow()), // Specify end date for the report as "now"
+    startIndex = Date.StartOfDay(Date.AddDays(endIndex,-report_period)), // Specify start date as a negative number to get the day at 12:00:00 AM
 
-endIndex = DateTimeZone.RemoveZone(DateTimeZone.UtcNow()), // Specify end date for the report as "now"
-startIndex = Date.StartOfDay(Date.AddDays(endIndex,-report_period)), // Specify start date as a negative number to get the day at 12:00:00 AM
+    // verify dates - for debugging
+    //test = DateTime.ToText(startIndex,"yyyy-MM-ddTHH:mm:ssZ"),
+    //test2 = DateTime.ToText(endIndex,"yyyy-MM-ddTHH:mm:ssZ"),
 
-// verify dates - for debugging
-//test = DateTime.ToText(startIndex,"yyyy-MM-ddTHH:mm:ssZ"),
-//test2 = DateTime.ToText(endIndex,"yyyy-MM-ddTHH:mm:ssZ"),
+    //
+    // User configuration section - end
+    //
 
-//
-// User configuration section - end
-//
+    resourceUri = "https://dat-b.osisoft.com",
+    // split URL to avoid Power BI Service error regarding unsupported function Web.Contents
+    authUrlPart1 = resourceUri&"/identity",
+    authUrlPart2 = "/connect/token",
 
-resourceUri = "https://dat-b.osisoft.com",
-// split URL to avoid Power BI Service error regarding unsupported function Web.Contents
-authUrlPart1 = resourceUri&"/identity",
-authUrlPart2 = "/connect/token",
+    // PI Cloud REST API query - sampled, note/update intervals as required
+    //dataQuery = "/../api/"
+    //    &apiVersion&
+    //    "/Tenants/"
+    //    &tenantId&
+    //    "/Namespaces/"
+    //    &namespaceId&
+    //    "/Assets/"
+    //    &assetId&
+    //    "/Data/sampled?startIndex="
+    //    &DateTime.ToText(startIndex)&
+    //    "&intervals=960&endIndex="
+    //    &DateTime.ToText(endIndex),
 
-// PI Cloud REST API query - sampled, note/update intervals as required
-//dataQuery = "/../api/"
-//    &apiVersion&
-//    "/Tenants/"
-//    &tenantId&
-//    "/Namespaces/"
-//    &namespaceId&
-//    "/Assets/"
-//    &assetId&
-//    "/Data/sampled?startIndex="
-//    &DateTime.ToText(startIndex)&
-//    "&intervals=960&endIndex="
-//    &DateTime.ToText(endIndex),
+    // PI Cloud REST API query - window
+    dataQuery = "/../api/"
+        &apiVersion&
+        "/Tenants/"
+        &tenantId&
+        "/Namespaces/"
+        &namespaceId&
+        "/Assets/"
+        &assetId&
+        "/Data?startIndex="
+        &DateTime.ToText(startIndex)&
+        "&endIndex="
+        &DateTime.ToText(endIndex)&
+        "&count=250000",
 
-// PI Cloud REST API query - window
-dataQuery = "/../api/"
-    &apiVersion&
-    "/Tenants/"
-    &tenantId&
-    "/Namespaces/"
-    &namespaceId&
-    "/Assets/"
-    &assetId&
-    "/Data?startIndex="
-    &DateTime.ToText(startIndex)&
-    "&endIndex="
-    &DateTime.ToText(endIndex)&
-    "&count=250000",
+    // Construct message for authentication
+    escapedClientSecret = Uri.EscapeDataString(clientsecret),
+    authPOSTBody = "client_id="&clientid&"&client_secret="&escapedClientSecret&"&grant_type=client_credentials",
+    authPOSTBodyBinary = Text.ToBinary(authPOSTBody),
 
-// Construct message for authentication
-escapedClientSecret = Uri.EscapeDataString(clientsecret),
-authPOSTBody = "client_id="&clientid&"&client_secret="&escapedClientSecret&"&grant_type=client_credentials",
-authPOSTBodyBinary = Text.ToBinary(authPOSTBody),
+    // Authentiate
 
-// Authentiate
+    GetJson = Web.Contents(authUrlPart1,
 
-GetJson = Web.Contents(authUrlPart1,
+        [RelativePath=authUrlPart2,
 
-    [RelativePath=authUrlPart2,
-    
-     Timeout=#duration(0, 0, 30, 0),
+         Timeout=#duration(0, 0, 30, 0),
 
-     Headers=[#"Content-Type"="application/x-www-form-urlencoded;charset=UTF-8",
+         Headers=[#"Content-Type"="application/x-www-form-urlencoded;charset=UTF-8",
 
-     Accept="application/json"],
+         Accept="application/json"],
 
-     Content=authPOSTBodyBinary]
-),
+         Content=authPOSTBodyBinary]
+    ),
 
-FormatAsJson = Json.Document(GetJson),
+    FormatAsJson = Json.Document(GetJson),
 
-// Get token from the Json response
+    // Get token from the Json response
 
-AccessToken = FormatAsJson[access_token],
+    AccessToken = FormatAsJson[access_token],
 
-AccessTokenHeader = "bearer " & AccessToken,
+    AccessTokenHeader = "bearer " & AccessToken,
 
-// Query PI Cloud REST API
+    // Query PI Cloud REST API
 
-GetJsonQuery = Json.Document(
-    Web.Contents(
-        resourceUri,
-        [RelativePath=dataQuery, 
-        Headers=[Authorization=AccessTokenHeader]
-        ]
-    )
-),
+    GetJsonQuery = Json.Document(
+        Web.Contents(
+            resourceUri,
+            [RelativePath=dataQuery, 
+            Headers=[Authorization=AccessTokenHeader]
+            ]
+        )
+    ),
 
-#"Converted to Table" = Table.FromList(GetJsonQuery, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Converted to Table" = Table.FromList(GetJsonQuery, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
 
-#"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"Measurement", "Result"}, {"Measurement", "Result"}),
+    #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"Measurement", "Result"}, {"Measurement", "Result"}),
 
-#"Expanded Result2" = Table.ExpandListColumn(#"Expanded Column1", "Result"),
+    #"Expanded Result2" = Table.ExpandListColumn(#"Expanded Column1", "Result"),
 
-#"Expanded Result" = Table.ExpandRecordColumn(#"Expanded Result2", "Result", {"Timestamp", "Value"}, {"Timestamp", "Value"})
+    #"Expanded Result" = Table.ExpandRecordColumn(#"Expanded Result2", "Result", {"Timestamp", "Value"}, {"Timestamp", "Value"}),
+
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Result",{{"Measurement", type text}, {"Timestamp", type datetime}, {"Value", type number}})
 
 in
 
-#"Expanded Result"
+    #"Changed Type"
