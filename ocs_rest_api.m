@@ -1,4 +1,4 @@
-// 20201013.02 - change type
+// 20201013.03 
 
 let
     //
@@ -15,9 +15,13 @@ let
     clientid = "<client_id>",
 
     // PI Cloud Asset to query, using asset id either as an entered parameter or default specified after else in quotes
+    // If asset is defined as a parameter, comment out next line:
+    asset = null
     assetId = if asset <> null then asset else "<asset-id>",
 
     // Number of days for report, using entered report_period_days parameter or default of 14
+    // if report_period_days is defined as a parameter, comment out next line:
+    report_period_days = null
     report_period = if report_period_days <> null then report_period_days else 14,
 
     endIndex = DateTimeZone.RemoveZone(DateTimeZone.UtcNow()), // Specify end date for the report as "now"
