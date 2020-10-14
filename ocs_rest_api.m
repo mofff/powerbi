@@ -1,4 +1,10 @@
 // 20201013.03 
+// Power BI example accessing PI Cloud to query an asset
+// Usage:
+// Update expressions namespaceId,tenantId,apiVersion (if required),clientId,clientSecret,assetId (or comment if not required)
+// If necessary update
+//  1. date(s)
+//  2. REST API query
 
 let
     //
@@ -8,22 +14,24 @@ let
     // Tenant information
     namespaceId = "<namespace-id>",
     tenantId = "<tenant-id>",
+    // apiVersion = "v1",
     apiVersion = "v1-preview",
 
     // Credentials - Note: use a client associated with read-only roles
-    clientsecret = "<client_secret>",
-    clientid = "<client_id>",
+    clientId = "<client-id>",
+    clientSecret = "<client-secret>",
 
     // PI Cloud Asset to query, using asset id either as an entered parameter or default specified after else in quotes
     // If asset is defined as a parameter, comment out next line:
-    asset = null
+    asset = null,
     assetId = if asset <> null then asset else "<asset-id>",
 
     // Number of days for report, using entered report_period_days parameter or default of 14
     // if report_period_days is defined as a parameter, comment out next line:
-    report_period_days = null
+    report_period_days = null,
     report_period = if report_period_days <> null then report_period_days else 14,
 
+    // set query date
     endIndex = DateTimeZone.RemoveZone(DateTimeZone.UtcNow()), // Specify end date for the report as "now"
     startIndex = Date.StartOfDay(Date.AddDays(endIndex,-report_period)), // Specify start date as a negative number to get the day at 12:00:00 AM
 
@@ -32,13 +40,8 @@ let
     //test2 = DateTime.ToText(endIndex,"yyyy-MM-ddTHH:mm:ssZ"),
 
     //
-    // User configuration section - end
+    // Specify query
     //
-
-    resourceUri = "https://dat-b.osisoft.com",
-    // split URL to avoid Power BI Service error regarding unsupported function Web.Contents
-    authUrlPart1 = resourceUri&"/identity",
-    authUrlPart2 = "/connect/token",
 
     // PI Cloud REST API query - sampled, note/update intervals as required
     //dataQuery = "/../api/"
@@ -69,9 +72,18 @@ let
         &DateTime.ToText(endIndex)&
         "&count=250000",
 
+    //
+    // User configuration section - end
+    //
+
+    resourceUri = "https://dat-b.osisoft.com",
+    // split URL to avoid Power BI Service error regarding unsupported function Web.Contents
+    authUrlPart1 = resourceUri&"/identity",
+    authUrlPart2 = "/connect/token",
+
     // Construct message for authentication
-    escapedClientSecret = Uri.EscapeDataString(clientsecret),
-    authPOSTBody = "client_id="&clientid&"&client_secret="&escapedClientSecret&"&grant_type=client_credentials",
+    escapedClientSecret = Uri.EscapeDataString(clientSecret),
+    authPOSTBody = "client_id="&clientId&"&client_secret="&escapedClientSecret&"&grant_type=client_credentials",
     authPOSTBodyBinary = Text.ToBinary(authPOSTBody),
 
     // Authentiate
